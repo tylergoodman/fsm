@@ -1,14 +1,72 @@
 'use strict';
 
 const should = require('should');
+const assert = require('assert');
 
 
-const FSM = require('../index.js');
-const csv = require('csv');
+const FSM = require('../fsm.js');
 describe('FSM', function () {
   describe('#constructor', function () {
     let fsm = new FSM;
-    let fsm_csv = new FSM('./graph.csv');
+    fsm.addState([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]);
+    fsm.addState([
+      [2, /\d/]
+    ]);
+    fsm.addState([
+      [2, /\d/]
+    ], true);
+    fsm.addState([
+      [4, /\d/],
+      [6, /\./]
+    ]);
+    fsm.addState([
+      [4, /\d/],
+      [5, /\./]
+    ]);
+    fsm.addState([
+      [5, /\d/]
+    ], true);
+    fsm.addState([
+      [5, /\d/]
+    ]);
+    fsm.addState([
+      [8, /\w/]
+    ]);
+    fsm.addState([
+      [8, /\w|\d/],
+      [9, /\-/]
+    ], true);
+    fsm.addState([
+      [8, /\w|\d/]
+    ]);
+    fsm.addState([
+      [11, /\=/]
+    ]);
+    fsm.addState(true);
+    fsm.addState([
+      [13, /\+/]
+    ]);
+    fsm.addState(true);
+    fsm.addState([
+      [15, /\;/]
+    ]);
+    fsm.addState(true);
+    fsm.addState([
+      [17, /\*/]
+    ]);
+    fsm.addState(true);
+    fsm.addState([
+      [19, /\(/]
+    ]);
+    fsm.addState(true);
+    fsm.addState([
+      [21, /\)/]
+    ]);
+    fsm.addState(true);
+    let fsm_csv = new FSM('./test/graph.csv');
+    it('should produce same results from CSV and manual entry', function () {
+      assert.deepEqual(fsm, fsm_csv);
+    });
   });
   describe('#addState', function () {
     let fsm = new FSM;
