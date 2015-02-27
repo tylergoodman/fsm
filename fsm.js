@@ -1,9 +1,9 @@
 'use strict';
 const fs = require('fs');
-const EventEmitter = require('events').EventEmitter;
-const util = require('util');
+const path = require('path');
 const is = require('is_js');
 
+console.log(require)
 // class syntax not implemented yet ;_;
 var FSM = function (csv_filename, callback) {
   this.states = [];
@@ -69,11 +69,12 @@ FSM.prototype.addState = function (edges, isAccept) {
         // still no destructuring ;_;
         let to = edge[0];
         let gate = edge[1];
-        this.addEdge(newState, to, gate);
+        newState.addEdge(to, gate);
       }
       else {
         let to = edge;
-        this.addEdge(newState, to);
+        let gate = /./;
+        newState.addEdge(to, gate);
       }
     }
   }
@@ -84,20 +85,14 @@ FSM.prototype.addState = function (edges, isAccept) {
 
   return newState;
 }
-/*
-@param state: State (required): State to add edge to
-@param to: Number or String or State (required): State that edge goes to
-@param gate: Regex (optional): Gate which decides access to edge
-*/
-FSM.prototype.addEdge = function (state, to, gate) {
-  if (gate === void(0))
-    gate = /./;
-  if (to instanceof State)
-    to = this.states.indexOf(to);
-  return state.addEdge(to, gate);
-}
 FSM.prototype.isNDA = function () {
   return 'asdf';
+}
+FSM.prototype.doSubset = function (verbose) {
+  if (verbose === void(0))
+    verbose = false;
+  let states = [];
+
 }
 
 

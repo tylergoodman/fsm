@@ -4,3 +4,4 @@
 const fsm = require('./fsm');
 
 const input = new fsm('./test/graph.csv');
+console.log(__dirname);

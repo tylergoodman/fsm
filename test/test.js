@@ -3,7 +3,6 @@
 const should = require('should');
 const assert = require('assert');
 
-
 const FSM = require('../fsm.js');
 describe('FSM', function () {
   describe('#constructor', function () {
@@ -63,7 +62,7 @@ describe('FSM', function () {
       [21, /\)/]
     ]);
     fsm.addState(true);
-    let fsm_csv = new FSM('./test/graph.csv');
+    let fsm_csv = new FSM('./graph.csv');
     it('should produce same results from CSV and manual entry', function () {
       assert.deepEqual(fsm, fsm_csv);
     });
@@ -107,4 +106,5 @@ describe('FSM', function () {
       fsm.should.have.property('states').with.lengthOf(4);
     });
   });
+
 });
