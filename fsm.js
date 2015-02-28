@@ -1,9 +1,11 @@
 'use strict';
+require('sugar');
 const fs = require('fs');
 const path = require('path');
+const util = require('util');
 const is = require('is_js');
+const sprintf = require('sprintf');
 
-console.log(require)
 // class syntax not implemented yet ;_;
 var FSM = function (csv_filename, callback) {
   this.states = [];
@@ -36,8 +38,16 @@ FSM.prototype.parse = function (data) {
         continue;
       else if (char === '.')
         edges.push(j);
-      else
-        edges.push([j, new RegExp(char)]);
+      else {
+        if (char.includes('|')) {
+          let chars = char.split('|').map(function (char) {
+            return new RegExp(char);
+          });
+          edges.push([j, chars]);
+        }
+        else
+          edges.push([j, new RegExp(char)]);
+      }
     }
     let state = this.addState(edges, isAccept);
     // console.log(i, row, isAccept);
@@ -60,8 +70,8 @@ FSM.prototype.addState = function (edges, isAccept) {
     edges = void(0);
   }
 
-  let index = this.states.length;
-  let newState = this.states[index] = new State;
+  let newState = new State;
+  this.states.push(newState);
 
   if (edges !== void(0)) {
     for (let edge of edges) {
@@ -83,6 +93,8 @@ FSM.prototype.addState = function (edges, isAccept) {
   else
     newState.isAccept = false;
 
+  newState.i = this.states.length - 1;
+
   return newState;
 }
 FSM.prototype.isNDA = function () {
@@ -91,15 +103,103 @@ FSM.prototype.isNDA = function () {
 FSM.prototype.doSubset = function (verbose) {
   if (verbose === void(0))
     verbose = false;
-  let states = [];
+  let levels = [];
+  let gates = this._getCharset();
+  let fsm = this;
 
+  let capture = function (state) {
+    if (is.array(state)) {
+      let ret = [];
+      for (let s of state)
+        ret.add(capture(s));
+      return ret;
+    }
+    else {
+      // console.log(state);
+      let ret = [state];
+      for (let edge in state.edges) {
+        let gate = state.edges[edge];
+        if (gate.toString() === '/./') {
+          ret.push(fsm.states[edge]);
+          let recurse = capture(fsm.states[edge]);
+          if (recurse.length)
+            ret.add(recurse);
+        }
+      }
+      return ret.unique();
+    }
+  }
+
+  let subset = function (level) {
+    // console.log(level);
+    // levels.push(level);
+    for (let gate of gates) {
+      let next_level = {
+        states: [],
+        gates: {}
+      };
+      for (let state of level.capture) {
+        for (let edge in state.edges) {
+          let next_gate = state.edges[edge];
+          if (gate.toString() === next_gate.toString()) {
+            next_level.states.push(fsm.states[edge]);
+          }
+        }
+      }
+      level.gates[gate] = next_level.states.length > 0 ? next_level : '*';
+    }
+    for (let gate in level.gates) {
+      let next_level = level.gates[gate];
+      if (next_level !== '*') {
+        next_level.capture = capture(next_level.states);
+        if (levels.indexOf(next_level) < 0) {
+          levels.add(next_level);
+          subset(next_level);
+        }
+      }
+    }
+    console.log(util.inspect(level, { depth: null }));
+  }
+
+  let start = {
+    states: [this.states[0]],
+    capture: capture(this.states[0]),
+    gates: {}
+  };
+  levels.add(start);
+  // console.log(start);
+
+  subset(start);
+
+  return levels;
+}
+FSM.prototype._getCharset = function () {
+  let gates = [];
+  for (let state of this.states) {
+    for (let edge in state.edges) {
+      let gate = state.edges[edge];
+      if (is.array(gate)) {
+        for (let g of gate) {
+            if (g.toString() !== '/./') {
+              gates.push(g);
+            }
+        }
+      }
+      else {
+        if (gate.toString() !== '/./') {
+          gates.push(gate);
+        }
+      }
+    }
+  }
+  return gates.unique();
 }
 
 
 
 
 var State = function () {
-  this.edges = [];
+  this.edges = {};
 }
 State.prototype.isAccept = false;
 /*
@@ -108,9 +208,7 @@ State.prototype.isAccept = false;
 */
 State.prototype.addEdge = function (to, gate) {
   // still no variable object keys ;_;
-  let edge = {};
-  edge[to] = gate;
-  this.edges.push(edge);
+  this.edges[to] = gate;
 }
 
 module.exports = FSM;

@@ -7,7 +7,7 @@ const FSM = require('../fsm.js');
 describe('FSM', function () {
   describe('#constructor', function () {
     let fsm = new FSM;
-    fsm.addState([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]);
+    fsm.addState([1, 3, 7, 10, 12, 14, 16, 18, 20]);
     fsm.addState([
       [2, /\d/]
     ]);
@@ -32,11 +32,11 @@ describe('FSM', function () {
       [8, /\w/]
     ]);
     fsm.addState([
-      [8, /\w|\d/],
+      [8, [/\w/, /\d/]],
       [9, /\-/]
     ], true);
     fsm.addState([
-      [8, /\w|\d/]
+      [8, [/\w/,/\d/]]
     ]);
     fsm.addState([
       [11, /\=/]
@@ -62,7 +62,7 @@ describe('FSM', function () {
       [21, /\)/]
     ]);
     fsm.addState(true);
-    let fsm_csv = new FSM('./graph.csv');
+    let fsm_csv = new FSM('./test/graph.csv');
     it('should produce same results from CSV and manual entry', function () {
       assert.deepEqual(fsm, fsm_csv);
     });
@@ -82,19 +82,23 @@ describe('FSM', function () {
     let testState3 = fsm.addState(true);
 
     it('should add edges to state', function () {
-      testState0.should.have.property('edges').with.lengthOf(3);
-      testState1.should.have.property('edges').with.lengthOf(2);
-      testState2.should.have.property('edges').with.lengthOf(0);
-      testState3.should.have.property('edges').with.lengthOf(0);
+      testState0.should.have.property('edges');
+      testState1.should.have.property('edges');
+      testState2.should.have.property('edges');
+      testState3.should.have.property('edges');
+      Object.keys(testState0.edges).should.have.lengthOf(3);
+      Object.keys(testState1.edges).should.have.lengthOf(2);
+      Object.keys(testState2.edges).should.have.lengthOf(0);
+      Object.keys(testState3.edges).should.have.lengthOf(0);
     });
     it('should add default gate when not specified', function () {
       // testState0.should.have.property('edges').with.property(1).with.property(4, /./);
-      testState0['edges'][0].should.have.property(4, /./);
-      testState1['edges'][1].should.have.property(8, /./);
+      testState0.edges['4'].should.be.eql(/./);
+      testState1.edges['8'].should.be.eql(/./);
     });
     it('should add explicit gate when specified', function () {
-      testState0['edges'][1].should.have.property(5, /asdf/);
-      testState1['edges'][0].should.have.property(7, /123/);
+      testState0.edges['5'].should.be.eql(/asdf/);
+      testState1.edges['7'].should.be.eql(/123/);
     });
     it('should correctly assign acceptedness', function () {
       testState0.should.have.property('isAccept', false);
