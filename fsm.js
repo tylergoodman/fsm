@@ -106,28 +106,28 @@ FSM.prototype.doSubset = function (verbose) {
   let gates = this._getCharset();
   let fsm = this;
 
-  let capture = function (state) {
-    if (is.array(state)) {
-      let ret = [];
-      for (let s of state)
-        ret.add(capture(s));
-      return ret;
-    }
-    else {
-      // console.log(state);
-      let ret = [state];
-      for (let edge in state.edges) {
-        let gate = state.edges[edge];
-        if (gate.toString() === '/./') {
-          ret.push(fsm.states[edge]);
-          let recurse = capture(fsm.states[edge]);
-          if (recurse.length)
-            ret.add(recurse);
-        }
-      }
-      return ret.unique();
-    }
-  }
+  // let capture = function (state) {
+  //   if (is.array(state)) {
+  //     let ret = [];
+  //     for (let s of state)
+  //       ret.add(capture(s));
+  //     return ret;
+  //   }
+  //   else {
+  //     // console.log(state);
+  //     let ret = [state];
+  //     for (let edge in state.edges) {
+  //       let gate = state.edges[edge];
+  //       if (gate.toString() === '/./') {
+  //         ret.push(fsm.states[edge]);
+  //         let recurse = capture(fsm.states[edge]);
+  //         if (recurse.length)
+  //           ret.add(recurse);
+  //       }
+  //     }
+  //     return ret.unique();
+  //   }
+  // }
 
   // let a = 0;
   // let exists = [];
