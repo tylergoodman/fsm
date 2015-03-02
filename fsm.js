@@ -103,7 +103,6 @@ FSM.prototype.isNDA = function () {
 FSM.prototype.doSubset = function (verbose) {
   if (verbose === void(0))
     verbose = false;
-  let levels = [];
   let gates = this._getCharset();
   let fsm = this;
 
@@ -131,57 +130,87 @@ FSM.prototype.doSubset = function (verbose) {
   }
 
   // let a = 0;
-  let exists = [];
-  let subset = function (level) {
-    // console.log(a++);
-    // console.log(level);
-    // levels.push(level);
-    level.gates = {};
-    for (let gate of gates) {
-      let next_level = {
-        states: [],
-      };
-      for (let state of level.capture) {
-        for (let edge in state.edges) {
-          let next_gate = state.edges[edge];
-          if (gate.toString() === next_gate.toString()) {
-            next_level.states.push(fsm.states[edge]);
-          }
+  // let exists = [];
+  // let subset = function (level) {
+  //   // console.log(a++);
+  //   // console.log(level);
+  //   // levels.push(level);
+  //   level.gates = {};
+  //   for (let gate of gates) {
+  //     let next_level = {
+  //       states: [],
+  //     };
+  //     for (let state of level.capture) {
+  //       for (let edge in state.edges) {
+  //         let next_gate = state.edges[edge];
+  //         if (gate.toString() === next_gate.toString()) {
+  //           next_level.states.push(fsm.states[edge]);
+  //         }
+  //       }
+  //     }
+  //     level.gates[gate] = next_level.states.length > 0 ? next_level : '*';
+  //   }
+  //   // console.log(util.inspect(level, { depth: null }));
+  //   for (let gate in level.gates) {
+  //     let next_level = level.gates[gate];
+  //     if (next_level !== '*') {
+  //       let next_state = next_level.states.map(function (state) {
+  //         return state.i;
+  //       });
+  //       // console.log(exists);
+  //       let state_i = exists.findIndex(next_state);
+  //       // console.log(next_level);
+  //       if (state_i < 0) {
+  //         next_level.capture = capture(next_level.states);
+  //         next_level.i = levels.length;
+  //         levels.push(next_level);
+  //         exists.push(next_state);
+  //         // console.log('continuing along this path ', next_level);
+  //         subset(next_level);
+  //       }
+  //       else {
+  //         next_level = level.gates[gate] = levels[state_i];
+  //       }
+  //     }
+  //   }
+  // }
+
+  let Level = function () {
+    this.states = [];
+    this.captures = [];
+    this.gates = {};
+  }
+  Level.prototype.capture = function () {
+    function capture (state) {
+      let ret = [state];
+      for (let edge in state.edges) {
+        let gate = state.edges[edge];
+        if (gate.toString() === '/./') {
+          ret.push(fsm.states[edge]);
+          let recurse = capture(fsm.states[edge]);
+          if (recurse.length)
+            ret.add(recurse);
         }
       }
-      level.gates[gate] = next_level.states.length > 0 ? next_level : '*';
+      return ret.unique();
     }
-    // console.log(util.inspect(level, { depth: null }));
-    for (let gate in level.gates) {
-      let next_level = level.gates[gate];
-      if (next_level !== '*') {
-        let next_state = next_level.states.map(function (state) {
-          return state.i;
-        });
-        // console.log(exists);
-        let state_i = exists.findIndex(next_state);
-        // console.log(next_level);
-        if (state_i < 0) {
-          next_level.capture = capture(next_level.states);
-          next_level.i = levels.length;
-          levels.push(next_level);
-          exists.push(next_state);
-          // console.log('continuing along this path ', next_level);
-          subset(next_level);
-        }
-        else {
-          next_level = level.gates[gate] = levels[state_i];
-        }
-      }
+
+    for (let state of this.states) {
+      this.captures.add(capture(state));
     }
   }
 
+  let levels = [];
+  let queue = [];
+  let exists = [];
   let start = {
     states: [this.states[0]],
     capture: capture(this.states[0]),
     i: 0
   };
-  levels.push(start);
+  queue.push(start);
+  // levels.push(start);
+
   exists.push(start.states.map(function (state) {
     return state.i;
   }));
