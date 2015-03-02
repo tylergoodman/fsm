@@ -155,14 +155,14 @@ FSM.prototype.doSubset = function (verbose) {
     for (let gate in level.gates) {
       let next_level = level.gates[gate];
       if (next_level !== '*') {
-        next_level.capture = capture(next_level.states);
         let next_state = next_level.states.map(function (state) {
           return state.i;
         });
         // console.log(exists);
-        let state_exists = exists.findIndex(next_state);
+        let state_i = exists.findIndex(next_state);
         // console.log(next_level);
-        if (state_exists < 0) {
+        if (state_i < 0) {
+          next_level.capture = capture(next_level.states);
           next_level.i = levels.length;
           levels.push(next_level);
           exists.push(next_state);
@@ -170,7 +170,7 @@ FSM.prototype.doSubset = function (verbose) {
           subset(next_level);
         }
         else {
-          next_level.i = state_exists;
+          next_level = level.gates[gate] = levels[state_i];
         }
       }
     }
