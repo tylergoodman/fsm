@@ -130,13 +130,16 @@ FSM.prototype.doSubset = function (verbose) {
     }
   }
 
+  // let a = 0;
+  let exists = [];
   let subset = function (level) {
+    // console.log(a++);
     // console.log(level);
     // levels.push(level);
+    level.gates = {};
     for (let gate of gates) {
       let next_level = {
         states: [],
-        gates: {}
       };
       for (let state of level.capture) {
         for (let edge in state.edges) {
@@ -148,28 +151,78 @@ FSM.prototype.doSubset = function (verbose) {
       }
       level.gates[gate] = next_level.states.length > 0 ? next_level : '*';
     }
+    // console.log(util.inspect(level, { depth: null }));
     for (let gate in level.gates) {
       let next_level = level.gates[gate];
       if (next_level !== '*') {
         next_level.capture = capture(next_level.states);
-        if (levels.indexOf(next_level) < 0) {
-          levels.add(next_level);
+        let next_state = next_level.states.map(function (state) {
+          return state.i;
+        });
+        // console.log(exists);
+        let state_exists = exists.findIndex(next_state);
+        // console.log(next_level);
+        if (state_exists < 0) {
+          next_level.i = levels.length;
+          levels.push(next_level);
+          exists.push(next_state);
+          // console.log('continuing along this path ', next_level);
           subset(next_level);
+        }
+        else {
+          next_level.i = state_exists;
         }
       }
     }
-    console.log(util.inspect(level, { depth: null }));
   }
 
   let start = {
     states: [this.states[0]],
     capture: capture(this.states[0]),
-    gates: {}
+    i: 0
   };
-  levels.add(start);
+  levels.push(start);
+  exists.push(start.states.map(function (state) {
+    return state.i;
+  }));
   // console.log(start);
 
   subset(start);
+
+  // console.log(levels);
+  if (verbose) {
+    for (let i = 0; i < levels.length; i++) {
+      let level = levels[i];
+      // console.log(level);
+      let states = level.states.map(function (state) {
+        return state.i;
+      }).join(',');
+      let captures = level.capture.map(function (state) {
+        return state.i;
+      }).join(',');
+      console.log(`level S${i}, {${states}} (C{${captures}})`);
+      for (let gate in level.gates) {
+        let next_level = level.gates[gate];
+        // console.log(next_level);
+        if (next_level === '*') {
+          console.log(`\tS${i} -${gate}-> *`);
+        }
+        else {
+          let states = next_level.states.map(function (state) {
+            return state.i;
+          }).join(',');
+          let captures = next_level.capture.map(function (state) {
+            return state.i;
+          }).join(',');
+          let j = next_level.i;
+          let isAccept = next_level.capture.some(function (state) {
+            return state.isAccept;
+          }) ? 'accept' : 'not accept';
+          console.log(`\tS${i} -${gate}-> {${states}} (C{${captures}}) = S${j} ${isAccept}`);
+        }
+      }
+    }
+  }
 
   return levels;
 }
