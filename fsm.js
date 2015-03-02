@@ -144,8 +144,18 @@ FSM.prototype.doSubset = function (verbose) {
       for (let state of level.capture) {
         for (let edge in state.edges) {
           let next_gate = state.edges[edge];
-          if (gate.toString() === next_gate.toString()) {
-            next_level.states.push(fsm.states[edge]);
+          if (is.array(next_gate)) {
+            for (let g of next_gate) {
+              if (gate.toString() === g.toString()) {
+                next_level.states.push(fsm.states[edge]);
+                break;
+              }
+            }
+          }
+          else {
+            if (gate.toString() === next_gate.toString()) {
+              next_level.states.push(fsm.states[edge]);
+            }
           }
         }
       }
