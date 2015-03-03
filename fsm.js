@@ -5,22 +5,55 @@ const path = require('path');
 const util = require('util');
 const is = require('is_js');
 const sprintf = require('sprintf');
+const Table = require('cli-table');
 
 // class syntax not implemented yet ;_;
 var FSM = function (csv_filename, callback) {
   this.states = [];
 
   if (csv_filename !== void(0)) {
-    // don't want to deal with async for this
-    let csv_file = fs.readFileSync(csv_filename).toString();
-    let csv = csv_file
-      .split('\n')
-      .map(function (line) {
-        return line.split(',');
-      });
-    // remove last newline
-    csv.pop();
-    this.parse(csv);
+    if (is.string(csv_filename)) {
+      // don't want to deal with async for this
+      let csv_file = fs.readFileSync(csv_filename).toString();
+      let csv = csv_file
+        .split('\n')
+        .map(function (line) {
+          return line.split(',');
+        });
+      // remove last newline
+      csv.pop();
+      this.parse(csv);
+    }
+    else if (is.object(csv_filename)) {
+      let levels = csv_filename;
+      for (let i = 0; i < levels.length; i++) {
+        let level = levels[i];
+        let state = {
+          edges: {},
+          isAccept: level.capture.some(function (state) {
+            return state.isAccept;
+          }),
+          i: level.i
+        };
+        let edges = {};
+        for (let gate in level.gates) {
+          let next_level = level.gates[gate];
+          if (next_level === '*') continue;
+          // console.log(next_level);
+          if (edges[next_level.i] === void(0)) {
+            edges[next_level.i] = [];
+          }
+          edges[next_level.i].push(new RegExp(gate));
+        }
+        for (let edge in edges) {
+          if (edge.length === 1) {
+            edge = edge[0];
+          }
+        }
+        state.edges = edges;
+        this.states.push(state);
+      }
+    }
   }
 }
 FSM.State = State;
@@ -100,7 +133,7 @@ FSM.prototype.addState = function (edges, isAccept) {
 FSM.prototype.isNDA = function () {
   return 'asdf';
 }
-FSM.prototype.doSubset = function (verbose) {
+FSM.prototype.getSubset = function (verbose) {
   if (verbose === void(0))
     verbose = false;
   let levels = [];
@@ -130,12 +163,8 @@ FSM.prototype.doSubset = function (verbose) {
     }
   }
 
-  // let a = 0;
   let exists = [];
   let subset = function (level) {
-    // console.log(a++);
-    // console.log(level);
-    // levels.push(level);
     level.gates = {};
     for (let gate of gates) {
       let next_level = {
@@ -159,7 +188,7 @@ FSM.prototype.doSubset = function (verbose) {
           }
         }
       }
-      level.gates[gate] = next_level.states.length > 0 ? next_level : '*';
+      level.gates[gate.source] = next_level.states.length > 0 ? next_level : '*';
     }
     // console.log(util.inspect(level, { depth: null }));
     for (let gate in level.gates) {
@@ -168,15 +197,12 @@ FSM.prototype.doSubset = function (verbose) {
         let next_state = next_level.states.map(function (state) {
           return state.i;
         });
-        // console.log(exists);
         let state_i = exists.findIndex(next_state);
-        // console.log(next_level);
         if (state_i < 0) {
           next_level.capture = capture(next_level.states);
           next_level.i = levels.length;
           levels.push(next_level);
           exists.push(next_state);
-          // console.log('continuing along this path ', next_level);
           subset(next_level);
         }
         else {
@@ -195,15 +221,12 @@ FSM.prototype.doSubset = function (verbose) {
   exists.push(start.states.map(function (state) {
     return state.i;
   }));
-  // console.log(start);
 
   subset(start);
 
-  // console.log(levels);
   if (verbose) {
     for (let i = 0; i < levels.length; i++) {
       let level = levels[i];
-      // console.log(level);
       let states = level.states.map(function (state) {
         return state.i;
       }).join(',');
@@ -213,7 +236,6 @@ FSM.prototype.doSubset = function (verbose) {
       console.log(`level S${i}, {${states}} (C{${captures}})`);
       for (let gate in level.gates) {
         let next_level = level.gates[gate];
-        // console.log(next_level);
         if (next_level === '*') {
           console.log(`\tS${i} -${gate}-> *`);
         }
@@ -234,6 +256,7 @@ FSM.prototype.doSubset = function (verbose) {
     }
   }
 
+  // console.log(util.inspect(levels, { depth: null }));
   return levels;
 }
 FSM.prototype._getCharset = function () {
@@ -257,7 +280,52 @@ FSM.prototype._getCharset = function () {
   }
   return gates.unique();
 }
-
+FSM.prototype.drawState = function () {
+  let gates = this._getCharset();
+  let header = ['S'].add(gates);
+  let table = new Table({
+    head: header
+  });
+  for (let state of this.states) {
+    let row = [state.i];
+    // console.log(state);
+    for (let gate of gates) {
+      let loc = [];
+      // console.log('looking for edges with gate %s', gate);
+      for (let s in state.edges) {
+        let g = state.edges[s];
+        if (is.array(g)) {
+          // given up
+          for (let next_gate of g) {
+            if (next_gate.toString() === gate.toString()) {
+              loc.add(s);
+              break;
+            }
+          }
+        }
+        if (g.toString() === gate.toString()) {
+          // console.log('adding %s, %s = %s', s, g, gate);
+          loc.add(s);
+        }
+      }
+      if (loc.length > 1) {
+        loc = loc.join(',');
+      }
+      else if (loc.length === 0) {
+        loc = '*';
+      }
+      else {
+        loc = loc[0];
+      }
+      // console.log(loc);
+      row.push(loc);
+    }
+    // console.log(row);
+    table.push(row);
+  }
+  console.log(table.toString());
+  return table;
+}
 
 
 
