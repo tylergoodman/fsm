@@ -303,9 +303,11 @@ FSM.prototype.drawState = function () {
             }
           }
         }
-        if (g.toString() === gate.toString()) {
-          // console.log('adding %s, %s = %s', s, g, gate);
-          loc.add(s);
+        else {
+          if (g.toString() === gate.toString()) {
+            // console.log('adding %s, %s = %s', s, g, gate);
+            loc.add(s);
+          }
         }
       }
       if (loc.length > 1) {
@@ -331,8 +333,8 @@ FSM.prototype.drawState = function () {
 
 var State = function () {
   this.edges = {};
+  this.isAccept = false;
 }
-State.prototype.isAccept = false;
 /*
 @param to: Number or String (required): State that the edge goes to
 @param gate: Regex (required): Gate which decides access to the edge
@@ -342,4 +344,4 @@ State.prototype.addEdge = function (to, gate) {
   this.edges[to] = gate;
 }
 
-module.exports = FSM;
+exports = module.exports = FSM;
