@@ -8,6 +8,7 @@ const sprintf = require('sprintf');
 const Table = require('cli-table');
 
 // class syntax not implemented yet ;_;
+// i dont want to transpile
 var FSM = function (csv_filename, callback) {
   this.states = [];
 
@@ -396,6 +397,52 @@ FSM.prototype.drawLookup = function (print) {
     console.log(lookup_table.toString());
   }
   return lookup_table;
+}
+FSM.prototype.parseFile = function (filename) {
+  let file = fs.readFileSync(filename).toString().split('\n').join('');
+  console.log(file);
+  let current_state = this.states.first();
+  let buffer = '';
+
+  let next = function (state, char) {
+    let next = -1;
+    for (let edge in current_state.edges) {
+      let gates = current_state.edges[edge];
+      for (let gate of gates) {
+        if (gate.test(char)) {
+          next = edge;
+          break;
+        }
+      }
+    }
+    return next;
+  }
+
+
+  for (let i = 0; i < file.length; i++) {
+    let char = file[i];
+    // console.log(char);
+    let next_state = next(current_state, char);
+
+    if (next_state === -1 && !current_state.isAccept) {
+      return new Error('Invalid state reached: %s -> ? (%s)', current_state.i, char);
+    }
+
+
+    if (next_state === -1 && current_state.isAccept) {
+      console.log('Found %s: %s', current_state.isAccept, buffer);
+      next_state = 0;
+      i--;
+      buffer = '';
+    }
+    else {
+      buffer += char;
+    }
+
+    // console.log('%s -> %s, (%s)', current_state.i, next_state, buffer);
+    current_state = this.states[next_state];
+
+  }
 }
 
 
