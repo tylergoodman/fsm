@@ -13,7 +13,7 @@ describe('FSM', function () {
     ]);
     fsm.addState([
       [2, /\d/]
-    ], true);
+    ], 'integer');
     fsm.addState([
       [4, /\d/],
       [6, /\./]
@@ -24,7 +24,7 @@ describe('FSM', function () {
     ]);
     fsm.addState([
       [5, /\d/]
-    ], true);
+    ], 'real');
     fsm.addState([
       [5, /\d/]
     ]);
@@ -34,34 +34,34 @@ describe('FSM', function () {
     fsm.addState([
       [8, [/\w/, /\d/]],
       [9, /\-/]
-    ], true);
+    ], 'identifier');
     fsm.addState([
       [8, [/\w/,/\d/]]
     ]);
     fsm.addState([
       [11, /\=/]
     ]);
-    fsm.addState(true);
+    fsm.addState('assignment');
     fsm.addState([
       [13, /\+/]
     ]);
-    fsm.addState(true);
+    fsm.addState('addop');
     fsm.addState([
       [15, /\;/]
     ]);
-    fsm.addState(true);
+    fsm.addState('simpleop');
     fsm.addState([
       [17, /\*/]
     ]);
-    fsm.addState(true);
+    fsm.addState('multop');
     fsm.addState([
       [19, /\(/]
     ]);
-    fsm.addState(true);
+    fsm.addState('simpleop');
     fsm.addState([
       [21, /\)/]
     ]);
-    fsm.addState(true);
+    fsm.addState('simpleop');
     let fsm_csv = new FSM('./test/graph.csv');
     it('should produce same results from CSV and manual entry', function () {
       assert.deepEqual(fsm, fsm_csv);
@@ -77,9 +77,9 @@ describe('FSM', function () {
     let testState1 = fsm.addState([
       [7, /123/],
       8,
-    ], true);
+    ], 'identifier');
     let testState2 = fsm.addState();
-    let testState3 = fsm.addState(true);
+    let testState3 = fsm.addState('identifier');
 
     it('should add edges to state', function () {
       testState0.should.have.property('edges');
@@ -102,9 +102,9 @@ describe('FSM', function () {
     });
     it('should correctly assign acceptedness', function () {
       testState0.should.have.property('isAccept', false);
-      testState1.should.have.property('isAccept', true);
+      testState1.should.have.property('isAccept', 'identifier');
       testState2.should.have.property('isAccept', false);
-      testState3.should.have.property('isAccept', true);
+      testState3.should.have.property('isAccept', 'identifier');
     });
     it('should be added to the FSM', function () {
       fsm.should.have.property('states').with.lengthOf(4);

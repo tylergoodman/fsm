@@ -28,11 +28,14 @@ var FSM = function (csv_filename, callback) {
       let levels = csv_filename;
       for (let i = 0; i < levels.length; i++) {
         let level = levels[i];
+        let isAccept = false;
+        for (let state of level.capture) {
+          if (state.isAccept)
+            isAccept = state.isAccept;
+        }
         let state = {
           edges: {},
-          isAccept: level.capture.some(function (state) {
-            return state.isAccept;
-          }),
+          isAccept: isAccept,
           i: level.i
         };
         let edges = {};
@@ -63,7 +66,13 @@ parses CSV after read
 FSM.prototype.parse = function (data) {
   for (let i = 0; i < data.length; i++) {
     let row = data[i];
-    let isAccept = row[row.length - 1] === 'true';
+    let isAccept;
+    if (row.last() === 'false') {
+      isAccept = false;
+    }
+    else {
+      isAccept = row.last();
+    }
     let edges = [];
     for (let j = 0; j < row.length - 1; j++) {
       let char = row[j];
@@ -83,8 +92,6 @@ FSM.prototype.parse = function (data) {
       }
     }
     let state = this.addState(edges, isAccept);
-    // console.log(i, row, isAccept);
-    // console.log(state);
   }
 }
 /*
@@ -98,13 +105,12 @@ FSM.prototype.addState = function (edges, isAccept) {
     return newState;
   }
 
-  if (is.boolean(edges)) {
+  if (is.string(edges)) {
     isAccept = edges;
     edges = void(0);
   }
 
   let newState = new State;
-  this.states.push(newState);
 
   if (edges !== void(0)) {
     for (let edge of edges) {
@@ -121,17 +127,18 @@ FSM.prototype.addState = function (edges, isAccept) {
       }
     }
   }
-  if (is.boolean(isAccept))
+  if (isAccept !== void(0))
     newState.isAccept = isAccept;
   else
     newState.isAccept = false;
 
-  newState.i = this.states.length - 1;
+  newState.i = this.states.length;
+  this.states.push(newState);
 
   return newState;
 }
 FSM.prototype.isNDA = function () {
-  return 'asdf';
+  return;
 }
 FSM.prototype.getSubset = function (verbose) {
   if (verbose === void(0))
@@ -224,6 +231,7 @@ FSM.prototype.getSubset = function (verbose) {
 
   subset(start);
 
+
   if (verbose) {
     for (let i = 0; i < levels.length; i++) {
       let level = levels[i];
@@ -280,18 +288,15 @@ FSM.prototype._getCharset = function () {
   }
   return gates.unique();
 }
-FSM.prototype.drawState = function () {
+FSM.prototype.drawState = function (print) {
   let gates = this._getCharset();
-  let header = ['S'].add(gates);
   let table = new Table({
-    head: header
+    head: ['S'].add(gates)
   });
   for (let state of this.states) {
     let row = [state.i];
-    // console.log(state);
     for (let gate of gates) {
       let loc = [];
-      // console.log('looking for edges with gate %s', gate);
       for (let s in state.edges) {
         let g = state.edges[s];
         if (is.array(g)) {
@@ -305,7 +310,6 @@ FSM.prototype.drawState = function () {
         }
         else {
           if (g.toString() === gate.toString()) {
-            // console.log('adding %s, %s = %s', s, g, gate);
             loc.add(s);
           }
         }
@@ -319,14 +323,79 @@ FSM.prototype.drawState = function () {
       else {
         loc = loc[0];
       }
-      // console.log(loc);
       row.push(loc);
     }
-    // console.log(row);
     table.push(row);
   }
-  console.log(table.toString());
+  if (print)
+    console.log(table.toString());
   return table;
+}
+
+FSM.prototype.drawAction = function (print) {
+  let table = this.drawState(false);
+  let gates = this._getCharset();
+  let action_table = new Table({
+    head: ['S'].add(gates)
+  });
+  for (let i = 0; i < table.length; i++) {
+    let row = table[i];
+    let state = row[0];
+    let action_row = [state];
+    for (let j = 1; j < row.length; j++) {
+      let char = row[j];
+      // console.log(this.states, char);
+      // console.log(this.states[char]);
+      if (char === '*') {
+        if (this.states[state].isAccept) {
+          action_row.add('HR');
+        }
+        else {
+          action_row.add('E');
+        }
+      }
+      else {
+        action_row.add('MA');
+      }
+    }
+    action_table.push(action_row);
+  }
+  if (print) {
+    console.log(action_table.toString());
+  }
+  return action_table;
+}
+FSM.prototype.drawLookup = function (print) {
+  let table = this.drawAction(false);
+  let gates = this._getCharset();
+  let lookup_table = new Table({
+    head: ['S'].add(gates)
+  });
+  for (let i = 0; i < table.length; i++) {
+    let row = table[i];
+    let state = this.states[row.first()];
+    let lookup_row = [];
+    if (!state.isAccept) {
+      for (let char of row)
+        lookup_row.push('-');
+    }
+    else {
+      for (let j = 0; j < row.length; j++) {
+        let char = row[j];
+        if (char === 'HR') {
+          lookup_row.push(state.isAccept)
+        }
+        else {
+          lookup_row.push('-');
+        }
+      }
+    }
+    lookup_table.push(lookup_row);
+  }
+  if (print) {
+    console.log(lookup_table.toString());
+  }
+  return lookup_table;
 }
 
 
