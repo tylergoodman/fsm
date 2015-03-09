@@ -17,4 +17,4 @@ const dfa = new fsm(nfa.getSubset());
 // dfa.drawAction(true);
 // dfa.drawLookup(true);
 
-dfa.parseFile('test/parse.txt');
+// dfa.parseFile('test/parse.txt');

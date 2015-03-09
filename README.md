@@ -4,4 +4,5 @@
 
 ### Todo
 - classify a lot of stuff?
+- remove isjs?
 - make less disgustingly ugly

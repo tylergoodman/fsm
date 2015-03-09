@@ -403,6 +403,7 @@ FSM.prototype.parseFile = function (filename) {
   console.log(file);
   let current_state = this.states.first();
   let buffer = '';
+  let output = [];
 
   let next = function (state, char) {
     let next = -1;
@@ -430,7 +431,10 @@ FSM.prototype.parseFile = function (filename) {
 
 
     if (next_state === -1 && current_state.isAccept) {
-      console.log('Found %s: %s', current_state.isAccept, buffer);
+      let message = `Found ${current_state.isAccept}: ${buffer}`;
+      console.log(message);
+      output.push(message);
+
       next_state = 0;
       i--;
       buffer = '';
@@ -443,6 +447,8 @@ FSM.prototype.parseFile = function (filename) {
     current_state = this.states[next_state];
 
   }
+
+  return output.join('\n');
 }
 
 
